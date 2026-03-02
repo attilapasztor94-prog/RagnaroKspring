@@ -23,7 +23,7 @@ public class ChatService {
 
     public ChatResponse send(ChatRequest req) {
         // 1. Preluăm/Creăm Chat-ul (folosind denumirea corectă din DTO: getChatID)
-        Chat c = conversationService.getOrCreate(req.getChatID());
+        Chat c = conversationService.getOrCreate(req.getConversationId());
 
         // 2. Mesaj Utilizator
         Message user = new Message();

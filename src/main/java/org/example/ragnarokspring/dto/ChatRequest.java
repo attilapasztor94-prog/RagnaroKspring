@@ -1,11 +1,23 @@
 package org.example.ragnarokspring.dto;
 
 public class ChatRequest {
-    private Long chatID;
+
+    private Long conversationId;
     private String message;
 
-    public Long getChatID() {return chatID;}
-    public void setChatID(Long chatID) {this.chatID = chatID;}
-    public String getMessage() {return message;}
-    public void setMessage(String message) {this.message = message;}
+    public Long getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(Long conversationId) {
+        this.conversationId = conversationId;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }
