@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="ro">
 <head>
-    <meta charset="utf-8"/>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Ragnarok ICS</title>
 
     <style>
@@ -12,39 +13,43 @@
             flex: 3;
             padding: 16px;
             border-right: 1px solid #ddd;
-            display:flex;
-            flex-direction:column;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .right {
             flex: 1.4;
             padding: 16px;
-            overflow:auto;
+            overflow: auto;
         }
 
         #chatOut {
             flex: 1;
             border: 1px solid #ddd;
             padding: 12px;
-            overflow:auto;
+            overflow: auto;
             white-space: pre-wrap;
+            background: #fff;
         }
 
-        .row { display:flex; gap:8px; margin-top: 10px; }
+        .row { display: flex; gap: 8px; }
         #chatMsg { flex: 1; padding: 8px; }
 
+        .btn { padding: 8px 12px; cursor: pointer; }
+        .btn:disabled { cursor: not-allowed; opacity: 0.6; }
+
+        .muted { color: #666; font-size: 12px; }
+        .error { color: #b00020; }
         .conv {
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 8px;
             margin-bottom: 8px;
             cursor: pointer;
+            user-select: none;
         }
-
         .conv.active { border-color: #333; }
-        .muted { color:#666; font-size: 12px; }
-        .error { color: red; }
-        .btn { padding: 8px 12px; }
     </style>
 </head>
 
@@ -52,7 +57,7 @@
 <div class="app">
 
     <div class="left">
-        <h2>Ragnarok ICS</h2>
+        <h2 style="margin:0">Ragnarok ICS</h2>
 
         <div id="chatOut"></div>
 
@@ -68,7 +73,7 @@
     </div>
 
     <div class="right">
-        <h3>Conversations</h3>
+        <h3 style="margin-top:0">Conversations</h3>
         <div id="convList"></div>
     </div>
 
@@ -76,71 +81,92 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-
+        // ===== state =====
         let conversationId = null;
-        let isSending = false;
+        let isBusy = false;
 
+        // ===== elements =====
         const chatOut = document.getElementById("chatOut");
         const convList = document.getElementById("convList");
         const chatMsg = document.getElementById("chatMsg");
         const sendBtn = document.getElementById("sendBtn");
         const newBtn = document.getElementById("newBtn");
 
+        // ===== helpers =====
+        function setBusy(v) {
+            isBusy = v;
+            sendBtn.disabled = v;
+            newBtn.disabled = v;
+        }
+
         function appendLine(text) {
             chatOut.textContent += text + "\n\n";
             chatOut.scrollTop = chatOut.scrollHeight;
         }
 
-        function renderChat(messages){
+        function renderMessages(messages) {
             chatOut.textContent = "";
             if (!Array.isArray(messages)) return;
 
-            for (const m of messages){
-                appendLine(`${m.role}: ${m.content}`);
+            for (const m of messages) {
+                const role = (m.role ?? "ASSISTANT").toString().toUpperCase();
+                const content = (m.content ?? "").toString();
+                appendLine(`${role}: ${content}`);
             }
         }
 
-        function setButtonsDisabled(disabled) {
-            sendBtn.disabled = disabled;
-            newBtn.disabled = disabled;
+        function normalizeId(obj) {
+            // Suportă orice variantă: id, chatId, chatID, conversationId etc.
+            return obj?.conversationId
+                ?? obj?.conversationID
+                ?? obj?.id
+                ?? obj?.ID
+                ?? obj?.chatId
+                ?? obj?.chatID
+                ?? obj?.chatid
+                ?? null;
         }
 
-        function extractConversationId(data) {
-            // backend-ul poate întoarce diferit: {conversationId}, {id}, {chatId}
-            return data?.conversationId ?? data?.id ?? data?.chatId ?? null;
+        async function safeJson(res) {
+            const text = await res.text().catch(() => "");
+            if (!text) return null;
+            try { return JSON.parse(text); } catch { return { raw: text }; }
         }
 
-        async function refreshConversations(){
+        // ===== API calls =====
+        async function refreshConversations() {
             try {
-                const res = await fetch('/api/chat/chats');
+                const res = await fetch("/api/chat/chats");
                 if (!res.ok) throw new Error("GET /api/chat/chats failed");
 
                 const list = await res.json();
                 convList.innerHTML = "";
 
-                if (!Array.isArray(list) || list.length === 0){
+                if (!Array.isArray(list) || list.length === 0) {
                     convList.innerHTML = "<div class='muted'>Nu există conversații</div>";
                     return;
                 }
 
-                for (const c of list){
+                for (const c of list) {
+                    const id = normalizeId(c);  // IMPORTANT: nu presupunem c.id
+                    if (!id) continue;
+
                     const div = document.createElement("div");
-                    div.className = "conv" + (conversationId === c.id ? " active" : "");
+                    div.className = "conv" + (String(conversationId) === String(id) ? " active" : "");
                     div.innerHTML = `
-            <div><b>#${c.id}</b> ${c.title ?? "Chat"}</div>
-            <div class="muted">${c.updatedAt ?? ""}</div>
+            <div><b>#${id}</b> ${(c.title ?? "Chat")}</div>
+            <div class="muted">${(c.updatedAt ?? c.createdAt ?? "")}</div>
           `;
-                    div.onclick = () => loadConversation(c.id);
+                    div.addEventListener("click", () => loadConversation(id));
                     convList.appendChild(div);
                 }
-
             } catch (e) {
                 console.error(e);
-                convList.innerHTML = "<div class='error'>Server indisponibil</div>";
+                convList.innerHTML = "<div class='error'>Eroare la încărcarea conversațiilor.</div>";
             }
         }
 
-        async function loadConversation(id){
+        async function loadConversation(id) {
             try {
                 conversationId = id;
 
@@ -148,91 +174,84 @@
                 if (!res.ok) throw new Error(`GET /api/chat/chats/${id}/messages failed`);
 
                 const msgs = await res.json();
-                renderChat(msgs);
-
-                refreshConversations();
+                renderMessages(msgs);
+                await refreshConversations();
             } catch (e) {
                 console.error(e);
                 chatOut.textContent = "Eroare la încărcarea conversației.";
             }
         }
 
-        async function sendChat(){
-            if (isSending) return;
+        async function newChat() {
+            // doar reset UI + state; chat-ul se creează automat la primul send
+            conversationId = null;
+            chatOut.textContent = "";
+            chatMsg.value = "";
+            chatMsg.focus();
+            await refreshConversations();
+        }
+
+        async function sendChat() {
+            if (isBusy) return;
 
             const message = chatMsg.value.trim();
             if (!message) return;
 
-            isSending = true;
-            setButtonsDisabled(true);
+            setBusy(true);
 
+            // UX: afișăm imediat
             chatMsg.value = "";
-
-            // Afișăm instant (UX)
             appendLine(`USER: ${message}`);
             appendLine(`ASSISTANT: typing...`);
 
             try {
-                const res = await fetch('/api/chat/send', {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
+                const res = await fetch("/api/chat/send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        conversationId: conversationId, // poate fi null => backend creează chat nou
+                        conversationId: conversationId, // poate fi null => backend creează un chat nou
                         message: message
                     })
                 });
 
                 if (!res.ok) {
-                    const t = await res.text().catch(() => "");
-                    throw new Error(`POST /api/chat/send failed. ${t}`);
+                    const err = await res.text().catch(() => "");
+                    throw new Error(`POST /api/chat/send failed: ${err}`);
                 }
 
-                const data = await res.json();
-                const newId = extractConversationId(data);
+                const data = await safeJson(res);
 
+                const newId = normalizeId(data);
                 if (!newId) {
-                    console.error("Răspuns /api/chat/send fără conversationId:", data);
-                    throw new Error("Server-ul nu a întors conversationId (id/chatId/conversationId).");
+                    console.error("Răspuns /api/chat/send fără ID:", data);
+                    throw new Error("Server-ul nu a întors un ID de conversație (chatID/chatId/id/conversationId).");
                 }
 
                 conversationId = newId;
 
-                // Reîncărcăm conversația reală (aici era bug-ul: undefined)
                 const res2 = await fetch(`/api/chat/chats/${conversationId}/messages`);
                 if (!res2.ok) {
-                    const t2 = await res2.text().catch(() => "");
-                    throw new Error(`GET /api/chat/chats/${conversationId}/messages failed. ${t2}`);
+                    const err2 = await res2.text().catch(() => "");
+                    throw new Error(`GET messages failed: ${err2}`);
                 }
 
                 const msgs = await res2.json();
-                renderChat(msgs);
-
-                refreshConversations();
+                renderMessages(msgs);
+                await refreshConversations();
 
             } catch (e) {
                 console.error(e);
                 appendLine(`SYSTEM: Eroare la trimiterea mesajului. Verifică consola (F12).`);
             } finally {
-                isSending = false;
-                setButtonsDisabled(false);
+                setBusy(false);
             }
         }
 
-        function newChat(){
-            conversationId = null;
-            chatOut.textContent = "";
-            refreshConversations();
-            chatMsg.focus();
-        }
+        // ===== safety: log JS errors =====
+        window.addEventListener("error", (e) => console.error("JS error:", e.error || e.message));
+        window.addEventListener("unhandledrejection", (e) => console.error("Unhandled rejection:", e.reason));
 
-        // “Airbag” pt. erori JS
-        window.addEventListener("error", (e) => {
-            console.error("JS error:", e.error || e.message);
-        });
-        window.addEventListener("unhandledrejection", (e) => {
-            console.error("Unhandled promise rejection:", e.reason);
-        });
-
+        // ===== events =====
         sendBtn.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -245,6 +264,7 @@
             newChat();
         });
 
+        // init
         refreshConversations();
     });
 </script>
