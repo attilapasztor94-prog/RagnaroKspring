@@ -1,115 +1,191 @@
+<!doctype html>
+<html lang="ro">
+<head>
+    <meta charset="utf-8"/>
+    <title>Ragnarok ICS</title>
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; }
+        .app { display: flex; height: 100vh; }
+
+        .left {
+            flex: 3;
+            padding: 16px;
+            border-right: 1px solid #ddd;
+            display:flex;
+            flex-direction:column;
+        }
+
+        .right {
+            flex: 1.4;
+            padding: 16px;
+            overflow:auto;
+        }
+
+        #chatOut {
+            flex: 1;
+            border: 1px solid #ddd;
+            padding: 12px;
+            overflow:auto;
+            white-space: pre-wrap;
+        }
+
+        .row { display:flex; gap:8px; margin-top: 10px; }
+        #chatMsg { flex: 1; padding: 8px; }
+
+        .conv {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .conv.active { border-color: #333; }
+        .muted { color:#666; font-size: 12px; }
+        .error { color: red; }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <div class="left">
+        <h2>Ragnarok ICS</h2>
+
+        <div id="chatOut"></div>
+
+        <div class="row">
+            <input id="chatMsg" placeholder="Scrie un mesaj..." />
+            <button id="sendBtn">Send</button>
+            <button id="newBtn">New</button>
+        </div>
+
+        <div class="muted">
+            Apasă pe o conversație din dreapta pentru a încărca istoricul.
+        </div>
+    </div>
+
+    <div class="right">
+        <h3>Conversations</h3>
+        <div id="convList"></div>
+    </div>
+
+</div>
+
 <script>
-    let conversationId = null;
+    document.addEventListener("DOMContentLoaded", () => {
 
-    function renderChat(messages){
-        const out = document.getElementById('chatOut');
-        out.textContent = "";
+        let conversationId = null;
 
-        if (!Array.isArray(messages)) {
-            out.textContent = "Eroare la încărcarea mesajelor.";
-            return;
-        }
+        const chatOut = document.getElementById("chatOut");
+        const convList = document.getElementById("convList");
+        const chatMsg = document.getElementById("chatMsg");
+        const sendBtn = document.getElementById("sendBtn");
+        const newBtn = document.getElementById("newBtn");
 
-        for (const m of messages){
-            out.textContent += `${m.role}: ${m.content}\n\n`;
-        }
+        function renderChat(messages){
+            chatOut.textContent = "";
+            if (!Array.isArray(messages)) return;
 
-        out.scrollTop = out.scrollHeight;
-    }
-
-    async function refreshConversations(){
-        try {
-            const res = await fetch('/api/chat/chats');
-            if (!res.ok) throw new Error();
-
-            const list = await res.json();
-            const box = document.getElementById('convList');
-            box.innerHTML = "";
-
-            if (!Array.isArray(list) || list.length === 0) {
-                box.innerHTML = "<div class='muted'>Nu există conversații</div>";
-                return;
+            for (const m of messages){
+                chatOut.textContent += `${m.role}: ${m.content}\n\n`;
             }
 
-            for (const c of list){
-                const div = document.createElement('div');
-                div.className = "conv" + (conversationId === c.id ? " active" : "");
+            chatOut.scrollTop = chatOut.scrollHeight;
+        }
 
-                div.innerHTML = `
+        async function refreshConversations(){
+            try {
+                const res = await fetch('/api/chat/chats');
+                if (!res.ok) throw new Error();
+
+                const list = await res.json();
+                convList.innerHTML = "";
+
+                if (!Array.isArray(list) || list.length === 0){
+                    convList.innerHTML = "<div class='muted'>Nu există conversații</div>";
+                    return;
+                }
+
+                for (const c of list){
+                    const div = document.createElement("div");
+                    div.className = "conv" + (conversationId === c.id ? " active" : "");
+                    div.innerHTML = `
                     <div><b>#${c.id}</b> ${c.title ?? "Chat"}</div>
                     <div class="muted">${c.updatedAt ?? ""}</div>
                 `;
 
-                div.onclick = () => loadConversation(c.id);
-                box.appendChild(div);
+                    div.onclick = () => loadConversation(c.id);
+                    convList.appendChild(div);
+                }
+
+            } catch {
+                convList.innerHTML = "<div class='error'>Server indisponibil</div>";
             }
-        } catch {
-            document.getElementById('convList').innerHTML =
-                "<div class='error'>Server indisponibil</div>";
         }
-    }
 
-    async function loadConversation(id){
-        try {
-            conversationId = id;
+        async function loadConversation(id){
+            try {
+                conversationId = id;
 
-            const res = await fetch(`/api/chat/chats/${id}/messages`);
-            if (!res.ok) throw new Error();
+                const res = await fetch(`/api/chat/chats/${id}/messages`);
+                if (!res.ok) throw new Error();
 
-            const msgs = await res.json();
-            renderChat(msgs);
+                const msgs = await res.json();
+                renderChat(msgs);
 
-            await refreshConversations(); // 🔥 refresh după ce avem mesajele
+                await refreshConversations();
 
-        } catch {
-            document.getElementById('chatOut').textContent =
-                "Eroare la încărcarea conversației.";
+            } catch {
+                chatOut.textContent = "Eroare la încărcarea conversației.";
+            }
         }
-    }
 
-    async function sendChat(){
-        const input = document.getElementById('chatMsg');
-        const message = input.value.trim();
-        if (!message) return;
+        async function sendChat(){
+            const message = chatMsg.value.trim();
+            if (!message) return;
 
-        try {
-            const res = await fetch('/api/chat/send', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({
-                    conversationId: conversationId,
-                    message: message
-                })
-            });
+            try {
+                const res = await fetch('/api/chat/send', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        conversationId: conversationId,
+                        message: message
+                    })
+                });
 
-            if (!res.ok) throw new Error();
+                if (!res.ok) throw new Error();
 
-            const data = await res.json();
-            conversationId = data.conversationId;
+                const data = await res.json();
+                conversationId = data.conversationId;
+                chatMsg.value = "";
 
-            input.value = "";
+                const res2 = await fetch(`/api/chat/chats/${conversationId}/messages`);
+                const msgs = await res2.json();
+                renderChat(msgs);
 
-            // 🔥 încărcăm direct mesajele fără loadConversation
-            const res2 = await fetch(`/api/chat/chats/${conversationId}/messages`);
-            const msgs = await res2.json();
-            renderChat(msgs);
+                await refreshConversations();
 
-            await refreshConversations();
-
-        } catch (err) {
-            document.getElementById('chatOut').textContent =
-                "Eroare la trimiterea mesajului.";
-            console.error(err);
+            } catch {
+                chatOut.textContent = "Eroare la trimiterea mesajului.";
+            }
         }
-    }
 
-    function newChat(){
-        conversationId = null;
-        document.getElementById('chatOut').textContent = "";
+        function newChat(){
+            conversationId = null;
+            chatOut.textContent = "";
+            refreshConversations();
+        }
+
+        sendBtn.addEventListener("click", sendChat);
+        newBtn.addEventListener("click", newChat);
+
         refreshConversations();
-    }
-
-    (async function init(){
-        await refreshConversations();
-    })();
+    });
 </script>
+
+</body>
+</html>
