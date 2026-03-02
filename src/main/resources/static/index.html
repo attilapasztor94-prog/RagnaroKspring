@@ -43,6 +43,7 @@
 
         .conv.active { border-color: #333; }
         .muted { color:#666; font-size: 12px; }
+        .error { color: red; }
     </style>
 </head>
 
@@ -80,6 +81,11 @@
         const out = document.getElementById('chatOut');
         out.textContent = "";
 
+        if (!Array.isArray(messages)) {
+            out.textContent = "Eroare la încărcarea mesajelor.";
+            return;
+        }
+
         for (const m of messages){
             out.textContent += `${m.role}: ${m.content}\n\n`;
         }
@@ -88,55 +94,98 @@
     }
 
     async function refreshConversations(){
-        const res = await fetch('/api/chat/chats');
-        const box = document.getElementById('convList');
-        box.innerHTML = "";
+        try {
+            const res = await fetch('/api/chat/chats');
 
-        for (const c of list){
-            const div = document.createElement('div');
+            if (!res.ok) throw new Error("Eroare server");
 
-            div.className = "conv" + (conversationId === c.id ? " active" : "");
+            const list = await res.json();
 
-            div.innerHTML = `
-      <div><b>#${c.id}</b> ${c.title ?? "Chat"}</div>
-      <div class="muted">${c.updatedAt ?? ""}</div>
-    `;
+            const box = document.getElementById('convList');
+            box.innerHTML = "";
 
-            div.onclick = () => loadConversation(c.id);
+            if (!Array.isArray(list)) {
+                box.innerHTML = "<div class='error'>Eroare la încărcare conversații</div>";
+                return;
+            }
 
-            box.appendChild(div);
+            if (list.length === 0) {
+                box.innerHTML = "<div class='muted'>Nu există conversații</div>";
+                return;
+            }
+
+            for (const c of list){
+                const div = document.createElement('div');
+
+                div.className = "conv" + (conversationId === c.id ? " active" : "");
+
+                div.innerHTML = `
+                  <div><b>#${c.id}</b> ${c.title ?? "Chat"}</div>
+                  <div class="muted">${c.updatedAt ?? ""}</div>
+                `;
+
+                div.onclick = () => loadConversation(c.id);
+
+                box.appendChild(div);
+            }
+        } catch (err) {
+            document.getElementById('convList').innerHTML =
+                "<div class='error'>Server indisponibil</div>";
         }
     }
 
     async function loadConversation(id){
-        conversationId = id;
+        try {
+            conversationId = id;
 
-        await refreshConversations();
+            await refreshConversations();
 
-        const res = await fetch(`/api/chat/chats/${id}/messages`);
-        renderChat(msgs);
+            const res = await fetch(`/api/chat/chats/${id}/messages`);
+
+            if (!res.ok) throw new Error("Eroare mesaje");
+
+            const msgs = await res.json();
+
+            renderChat(msgs);
+        } catch (err) {
+            document.getElementById('chatOut').textContent =
+                "Eroare la încărcarea conversației.";
+        }
     }
 
     async function sendChat(){
-        const message = document.getElementById('chatMsg').value.trim();
+        const messageInput = document.getElementById('chatMsg');
+        const message = messageInput.value.trim();
         if (!message) return;
 
-        const res = await fetch('/api/chat/send', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({
-                conversationId,
-                message
-            })
-        });
+        try {
+            const res = await fetch('/api/chat/send', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    conversationId,
+                    message
+                })
+            });
 
-        const data = await res.json();
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text);
+            }
 
-        conversationId = data.conversationId;
-        document.getElementById('chatMsg').value = "";
+            const data = await res.json();
 
-        await refreshConversations();
-        await loadConversation(conversationId);
+            conversationId = data.conversationId;
+            messageInput.value = "";
+
+            await refreshConversations();
+            await loadConversation(conversationId);
+
+        } catch (err) {
+            document.getElementById('chatOut').textContent =
+                "Eroare la trimiterea mesajului.";
+            console.error(err);
+        }
     }
 
     async function newChat(){
@@ -152,4 +201,3 @@
 
 </body>
 </html>
-
