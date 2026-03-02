@@ -1,7 +1,10 @@
 package org.example.ragnarokspring.controller;
 
 import jakarta.validation.Valid;
-import org.example.ragnarokspring.dto.*;
+import org.example.ragnarokspring.dto.ChatListItem;
+import org.example.ragnarokspring.dto.ChatRequest;
+import org.example.ragnarokspring.dto.ChatResponse;
+import org.example.ragnarokspring.dto.MessageDto;
 import org.example.ragnarokspring.repository.ChatRepository;
 import org.example.ragnarokspring.repository.MessageRepository;
 import org.example.ragnarokspring.service.ChatService;
@@ -25,13 +28,13 @@ public class ChatController {
         this.messages = messages;
     }
 
-    // 🔥 Send message
+    // Send message
     @PostMapping("/send")
     public ChatResponse send(@Valid @RequestBody ChatRequest req) {
         return chatService.send(req);
     }
 
-    // 🔥 Chat list (sidebar)
+    // Chat list (sidebar)
     @GetMapping("/chats")
     public List<ChatListItem> chats() {
         return chatRepository.findAll().stream()
@@ -42,7 +45,7 @@ public class ChatController {
                 .toList();
     }
 
-    // 🔥 Chat messages
+    // Chat messages
     @GetMapping("/chats/{id}/messages")
     public List<MessageDto> messages(@PathVariable Long id) {
         return messages.findByChatIdOrderByCreatedAtAsc(id).stream()
