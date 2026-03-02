@@ -44,11 +44,11 @@
         .conv.active { border-color: #333; }
         .muted { color:#666; font-size: 12px; }
         .error { color: red; }
+        .btn { padding: 8px 12px; }
     </style>
 </head>
 
 <body>
-
 <div class="app">
 
     <div class="left">
@@ -58,8 +58,8 @@
 
         <div class="row">
             <input id="chatMsg" placeholder="Scrie un mesaj..." />
-            <button id="sendBtn">Send</button>
-            <button id="newBtn">New</button>
+            <button type="button" class="btn" id="sendBtn">Send</button>
+            <button type="button" class="btn" id="newBtn">New</button>
         </div>
 
         <div class="muted">
@@ -78,6 +78,7 @@
     document.addEventListener("DOMContentLoaded", () => {
 
         let conversationId = null;
+        let isSending = false;
 
         const chatOut = document.getElementById("chatOut");
         const convList = document.getElementById("convList");
@@ -99,10 +100,20 @@
             }
         }
 
+        function setButtonsDisabled(disabled) {
+            sendBtn.disabled = disabled;
+            newBtn.disabled = disabled;
+        }
+
+        function extractConversationId(data) {
+            // backend-ul poate întoarce diferit: {conversationId}, {id}, {chatId}
+            return data?.conversationId ?? data?.id ?? data?.chatId ?? null;
+        }
+
         async function refreshConversations(){
             try {
                 const res = await fetch('/api/chat/chats');
-                if (!res.ok) throw new Error();
+                if (!res.ok) throw new Error("GET /api/chat/chats failed");
 
                 const list = await res.json();
                 convList.innerHTML = "";
@@ -116,15 +127,15 @@
                     const div = document.createElement("div");
                     div.className = "conv" + (conversationId === c.id ? " active" : "");
                     div.innerHTML = `
-                    <div><b>#${c.id}</b> ${c.title ?? "Chat"}</div>
-                    <div class="muted">${c.updatedAt ?? ""}</div>
-                `;
-
+            <div><b>#${c.id}</b> ${c.title ?? "Chat"}</div>
+            <div class="muted">${c.updatedAt ?? ""}</div>
+          `;
                     div.onclick = () => loadConversation(c.id);
                     convList.appendChild(div);
                 }
 
-            } catch {
+            } catch (e) {
+                console.error(e);
                 convList.innerHTML = "<div class='error'>Server indisponibil</div>";
             }
         }
@@ -134,25 +145,30 @@
                 conversationId = id;
 
                 const res = await fetch(`/api/chat/chats/${id}/messages`);
-                if (!res.ok) throw new Error();
+                if (!res.ok) throw new Error(`GET /api/chat/chats/${id}/messages failed`);
 
                 const msgs = await res.json();
                 renderChat(msgs);
 
                 refreshConversations();
-
-            } catch {
+            } catch (e) {
+                console.error(e);
                 chatOut.textContent = "Eroare la încărcarea conversației.";
             }
         }
 
         async function sendChat(){
+            if (isSending) return;
+
             const message = chatMsg.value.trim();
             if (!message) return;
 
+            isSending = true;
+            setButtonsDisabled(true);
+
             chatMsg.value = "";
 
-            // 🔥 Afișăm instant mesajul
+            // Afișăm instant (UX)
             appendLine(`USER: ${message}`);
             appendLine(`ASSISTANT: typing...`);
 
@@ -161,25 +177,44 @@
                     method:'POST',
                     headers:{'Content-Type':'application/json'},
                     body: JSON.stringify({
-                        conversationId: conversationId,
+                        conversationId: conversationId, // poate fi null => backend creează chat nou
                         message: message
                     })
                 });
 
-                if (!res.ok) throw new Error();
+                if (!res.ok) {
+                    const t = await res.text().catch(() => "");
+                    throw new Error(`POST /api/chat/send failed. ${t}`);
+                }
 
                 const data = await res.json();
-                conversationId = data.conversationId;
+                const newId = extractConversationId(data);
 
-                // 🔥 Reîncărcăm conversația reală
+                if (!newId) {
+                    console.error("Răspuns /api/chat/send fără conversationId:", data);
+                    throw new Error("Server-ul nu a întors conversationId (id/chatId/conversationId).");
+                }
+
+                conversationId = newId;
+
+                // Reîncărcăm conversația reală (aici era bug-ul: undefined)
                 const res2 = await fetch(`/api/chat/chats/${conversationId}/messages`);
+                if (!res2.ok) {
+                    const t2 = await res2.text().catch(() => "");
+                    throw new Error(`GET /api/chat/chats/${conversationId}/messages failed. ${t2}`);
+                }
+
                 const msgs = await res2.json();
                 renderChat(msgs);
 
                 refreshConversations();
 
-            } catch {
-                chatOut.textContent = "Eroare la trimiterea mesajului.";
+            } catch (e) {
+                console.error(e);
+                appendLine(`SYSTEM: Eroare la trimiterea mesajului. Verifică consola (F12).`);
+            } finally {
+                isSending = false;
+                setButtonsDisabled(false);
             }
         }
 
@@ -187,10 +222,28 @@
             conversationId = null;
             chatOut.textContent = "";
             refreshConversations();
+            chatMsg.focus();
         }
 
-        sendBtn.addEventListener("click", sendChat);
-        newBtn.addEventListener("click", newChat);
+        // “Airbag” pt. erori JS
+        window.addEventListener("error", (e) => {
+            console.error("JS error:", e.error || e.message);
+        });
+        window.addEventListener("unhandledrejection", (e) => {
+            console.error("Unhandled promise rejection:", e.reason);
+        });
+
+        sendBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            sendChat();
+        });
+
+        newBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            newChat();
+        });
 
         refreshConversations();
     });
