@@ -1,79 +1,3 @@
-<!doctype html>
-<html lang="ro">
-<head>
-    <meta charset="utf-8"/>
-    <title>Ragnarok ICS</title>
-
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; }
-        .app { display: flex; height: 100vh; }
-
-        .left {
-            flex: 3;
-            padding: 16px;
-            border-right: 1px solid #ddd;
-            display:flex;
-            flex-direction:column;
-        }
-
-        .right {
-            flex: 1.4;
-            padding: 16px;
-            overflow:auto;
-        }
-
-        #chatOut {
-            flex: 1;
-            border: 1px solid #ddd;
-            padding: 12px;
-            overflow:auto;
-            white-space: pre-wrap;
-        }
-
-        .row { display:flex; gap:8px; margin-top: 10px; }
-        #chatMsg { flex: 1; padding: 8px; }
-
-        .conv {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            cursor: pointer;
-        }
-
-        .conv.active { border-color: #333; }
-        .muted { color:#666; font-size: 12px; }
-        .error { color: red; }
-    </style>
-</head>
-
-<body>
-
-<div class="app">
-
-    <div class="left">
-        <h2>Ragnarok ICS</h2>
-
-        <div id="chatOut"></div>
-
-        <div class="row">
-            <input id="chatMsg" placeholder="Scrie un mesaj..." />
-            <button onclick="sendChat()">Send</button>
-            <button onclick="newChat()">New</button>
-        </div>
-
-        <div class="muted">
-            Apasă pe o conversație din dreapta pentru a încărca istoricul.
-        </div>
-    </div>
-
-    <div class="right">
-        <h3>Conversations</h3>
-        <div id="convList"></div>
-    </div>
-
-</div>
-
 <script>
     let conversationId = null;
 
@@ -96,39 +20,30 @@
     async function refreshConversations(){
         try {
             const res = await fetch('/api/chat/chats');
-
-            if (!res.ok) throw new Error("Eroare server");
+            if (!res.ok) throw new Error();
 
             const list = await res.json();
-
             const box = document.getElementById('convList');
             box.innerHTML = "";
 
-            if (!Array.isArray(list)) {
-                box.innerHTML = "<div class='error'>Eroare la încărcare conversații</div>";
-                return;
-            }
-
-            if (list.length === 0) {
+            if (!Array.isArray(list) || list.length === 0) {
                 box.innerHTML = "<div class='muted'>Nu există conversații</div>";
                 return;
             }
 
             for (const c of list){
                 const div = document.createElement('div');
-
                 div.className = "conv" + (conversationId === c.id ? " active" : "");
 
                 div.innerHTML = `
-                  <div><b>#${c.id}</b> ${c.title ?? "Chat"}</div>
-                  <div class="muted">${c.updatedAt ?? ""}</div>
+                    <div><b>#${c.id}</b> ${c.title ?? "Chat"}</div>
+                    <div class="muted">${c.updatedAt ?? ""}</div>
                 `;
 
                 div.onclick = () => loadConversation(c.id);
-
                 box.appendChild(div);
             }
-        } catch (err) {
+        } catch {
             document.getElementById('convList').innerHTML =
                 "<div class='error'>Server indisponibil</div>";
         }
@@ -138,24 +53,23 @@
         try {
             conversationId = id;
 
-            await refreshConversations();
-
             const res = await fetch(`/api/chat/chats/${id}/messages`);
-
-            if (!res.ok) throw new Error("Eroare mesaje");
+            if (!res.ok) throw new Error();
 
             const msgs = await res.json();
-
             renderChat(msgs);
-        } catch (err) {
+
+            await refreshConversations(); // 🔥 refresh după ce avem mesajele
+
+        } catch {
             document.getElementById('chatOut').textContent =
                 "Eroare la încărcarea conversației.";
         }
     }
 
     async function sendChat(){
-        const messageInput = document.getElementById('chatMsg');
-        const message = messageInput.value.trim();
+        const input = document.getElementById('chatMsg');
+        const message = input.value.trim();
         if (!message) return;
 
         try {
@@ -163,23 +77,24 @@
                 method:'POST',
                 headers:{'Content-Type':'application/json'},
                 body: JSON.stringify({
-                    conversationId,
-                    message
+                    conversationId: conversationId,
+                    message: message
                 })
             });
 
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(text);
-            }
+            if (!res.ok) throw new Error();
 
             const data = await res.json();
-
             conversationId = data.conversationId;
-            messageInput.value = "";
+
+            input.value = "";
+
+            // 🔥 încărcăm direct mesajele fără loadConversation
+            const res2 = await fetch(`/api/chat/chats/${conversationId}/messages`);
+            const msgs = await res2.json();
+            renderChat(msgs);
 
             await refreshConversations();
-            await loadConversation(conversationId);
 
         } catch (err) {
             document.getElementById('chatOut').textContent =
@@ -188,16 +103,13 @@
         }
     }
 
-    async function newChat(){
+    function newChat(){
         conversationId = null;
         document.getElementById('chatOut').textContent = "";
-        await refreshConversations();
+        refreshConversations();
     }
 
     (async function init(){
         await refreshConversations();
     })();
 </script>
-
-</body>
-</html>
