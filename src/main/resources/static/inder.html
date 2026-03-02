@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ro">
+<head>
+    <meta charset="utf-8"/>
+    <title>Ragnarok ICS</title>
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; }
+        .app { display: flex; height: 100vh; }
+
+        .left {
+            flex: 3;
+            padding: 16px;
+            border-right: 1px solid #ddd;
+            display:flex;
+            flex-direction:column;
+        }
+
+        .right {
+            flex: 1.4;
+            padding: 16px;
+            overflow:auto;
+        }
+
+        #chatOut {
+            flex: 1;
+            border: 1px solid #ddd;
+            padding: 12px;
+            overflow:auto;
+            white-space: pre-wrap;
+        }
+
+        .row { display:flex; gap:8px; margin-top: 10px; }
+        #chatMsg { flex: 1; padding: 8px; }
+
+        .conv {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .conv.active { border-color: #333; }
+        .muted { color:#666; font-size: 12px; }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <div class="left">
+        <h2>Ragnarok ICS</h2>
+
+        <div id="chatOut"></div>
+
+        <div class="row">
+            <input id="chatMsg" placeholder="Scrie un mesaj..." />
+            <button onclick="sendChat()">Send</button>
+            <button onclick="newChat()">New</button>
+        </div>
+
+        <div class="muted">
+            Apasă pe o conversație din dreapta pentru a încărca istoricul.
+        </div>
+    </div>
+
+    <div class="right">
+        <h3>Conversations</h3>
+        <div id="convList"></div>
+    </div>
+
+</div>
+
+<script>
+    let conversationId = null;
+
+    function renderChat(messages){
+        const out = document.getElementById('chatOut');
+        out.textContent = "";
+
+        for (const m of messages){
+            out.textContent += `${m.role}: ${m.content}\n\n`;
+        }
+
+        out.scrollTop = out.scrollHeight;
+    }
+
+    async function refreshConversations(){
+        const res = await fetch('/api/chat/conversations');
+        const list = await res.json();
+
+        const box = document.getElementById('convList');
+        box.innerHTML = "";
+
+        for (const c of list){
+            const div = document.createElement('div');
+
+            div.className = "conv" + (conversationId === c.id ? " active" : "");
+
+            div.innerHTML = `
+      <div><b>#${c.id}</b> ${c.title ?? "Chat"}</div>
+      <div class="muted">${c.updatedAt ?? ""}</div>
+    `;
+
+            div.onclick = () => loadConversation(c.id);
+
+            box.appendChild(div);
+        }
+    }
+
+    async function loadConversation(id){
+        conversationId = id;
+
+        await refreshConversations();
+
+        const res = await fetch(`/api/chat/conversations/${id}/messages`);
+        const msgs = await res.json();
+
+        renderChat(msgs);
+    }
+
+    async function sendChat(){
+        const message = document.getElementById('chatMsg').value.trim();
+        if (!message) return;
+
+        const res = await fetch('/api/chat/send', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+                conversationId,
+                message
+            })
+        });
+
+        const data = await res.json();
+
+        conversationId = data.conversationId;
+        document.getElementById('chatMsg').value = "";
+
+        await refreshConversations();
+        await loadConversation(conversationId);
+    }
+
+    async function newChat(){
+        conversationId = null;
+        document.getElementById('chatOut').textContent = "";
+        await refreshConversations();
+    }
+
+    (async function init(){
+        await refreshConversations();
+    })();
+</script>
+
+</body>
+</html>
+

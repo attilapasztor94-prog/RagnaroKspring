@@ -1,0 +1,10 @@
+package org.example.ragnarokspring.repository;
+
+import org.example.ragnarokspring.domain.Chat;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface ChatRepository extends JpaRepository<Chat, Long>{
+    List<Chat> findAllByOrderByUpdatedAtDesc();
+}
