@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Ragnarok ICS</title>
 
+    <!-- SVG Favicon - R simplu, clar la orice dimensiune -->
+    <link rel="icon" type="image/svg+xml"
+          href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ccircle%20cx='50'%20cy='50'%20r='50'%20fill='black'/%3E%3Ctext%20x='50'%20y='68'%20text-anchor='middle'%20font-size='64'%20font-family='Arial'%20font-weight='700'%20fill='white'%3ER%3C/text%3E%3C/svg%3E" />
+
     <style>
         body { font-family: Arial, sans-serif; margin: 0; }
         .app { display: flex; height: 100vh; }
@@ -41,6 +45,7 @@
 
         .muted { color: #666; font-size: 12px; }
         .error { color: #b00020; }
+
         .conv {
             padding: 10px;
             border: 1px solid #ddd;
@@ -49,6 +54,7 @@
             cursor: pointer;
             user-select: none;
         }
+
         .conv.active { border-color: #333; }
     </style>
 </head>
@@ -81,18 +87,16 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // ===== state =====
+
         let conversationId = null;
         let isBusy = false;
 
-        // ===== elements =====
         const chatOut = document.getElementById("chatOut");
         const convList = document.getElementById("convList");
         const chatMsg = document.getElementById("chatMsg");
         const sendBtn = document.getElementById("sendBtn");
         const newBtn = document.getElementById("newBtn");
 
-        // ===== helpers =====
         function setBusy(v) {
             isBusy = v;
             sendBtn.disabled = v;
@@ -116,7 +120,6 @@
         }
 
         function normalizeId(obj) {
-            // Suportă orice variantă: id, chatId, chatID, conversationId etc.
             return obj?.conversationId
                 ?? obj?.conversationID
                 ?? obj?.id
@@ -133,7 +136,6 @@
             try { return JSON.parse(text); } catch { return { raw: text }; }
         }
 
-        // ===== API calls =====
         async function refreshConversations() {
             try {
                 const res = await fetch("/api/chat/chats");
@@ -148,18 +150,19 @@
                 }
 
                 for (const c of list) {
-                    const id = normalizeId(c);  // IMPORTANT: nu presupunem c.id
+                    const id = normalizeId(c);
                     if (!id) continue;
 
                     const div = document.createElement("div");
                     div.className = "conv" + (String(conversationId) === String(id) ? " active" : "");
                     div.innerHTML = `
-            <div><b>#${id}</b> ${(c.title ?? "Chat")}</div>
-            <div class="muted">${(c.updatedAt ?? c.createdAt ?? "")}</div>
-          `;
+                    <div><b>#${id}</b> ${(c.title ?? "Chat")}</div>
+                    <div class="muted">${(c.updatedAt ?? c.createdAt ?? "")}</div>
+                `;
                     div.addEventListener("click", () => loadConversation(id));
                     convList.appendChild(div);
                 }
+
             } catch (e) {
                 console.error(e);
                 convList.innerHTML = "<div class='error'>Eroare la încărcarea conversațiilor.</div>";
@@ -171,11 +174,12 @@
                 conversationId = id;
 
                 const res = await fetch(`/api/chat/chats/${id}/messages`);
-                if (!res.ok) throw new Error(`GET /api/chat/chats/${id}/messages failed`);
+                if (!res.ok) throw new Error("GET messages failed");
 
                 const msgs = await res.json();
                 renderMessages(msgs);
                 await refreshConversations();
+
             } catch (e) {
                 console.error(e);
                 chatOut.textContent = "Eroare la încărcarea conversației.";
@@ -183,7 +187,6 @@
         }
 
         async function newChat() {
-            // doar reset UI + state; chat-ul se creează automat la primul send
             conversationId = null;
             chatOut.textContent = "";
             chatMsg.value = "";
@@ -199,7 +202,6 @@
 
             setBusy(true);
 
-            // UX: afișăm imediat
             chatMsg.value = "";
             appendLine(`USER: ${message}`);
             appendLine(`ASSISTANT: typing...`);
@@ -209,31 +211,27 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        conversationId: conversationId, // poate fi null => backend creează un chat nou
+                        conversationId: conversationId,
                         message: message
                     })
                 });
 
                 if (!res.ok) {
                     const err = await res.text().catch(() => "");
-                    throw new Error(`POST /api/chat/send failed: ${err}`);
+                    throw new Error(err);
                 }
 
                 const data = await safeJson(res);
-
                 const newId = normalizeId(data);
+
                 if (!newId) {
-                    console.error("Răspuns /api/chat/send fără ID:", data);
-                    throw new Error("Server-ul nu a întors un ID de conversație (chatID/chatId/id/conversationId).");
+                    throw new Error("Server-ul nu a întors ID de conversație.");
                 }
 
                 conversationId = newId;
 
                 const res2 = await fetch(`/api/chat/chats/${conversationId}/messages`);
-                if (!res2.ok) {
-                    const err2 = await res2.text().catch(() => "");
-                    throw new Error(`GET messages failed: ${err2}`);
-                }
+                if (!res2.ok) throw new Error("Fetch messages failed");
 
                 const msgs = await res2.json();
                 renderMessages(msgs);
@@ -241,30 +239,32 @@
 
             } catch (e) {
                 console.error(e);
-                appendLine(`SYSTEM: Eroare la trimiterea mesajului. Verifică consola (F12).`);
+                appendLine("SYSTEM: Eroare la trimiterea mesajului.");
             } finally {
                 setBusy(false);
             }
         }
 
-        // ===== safety: log JS errors =====
-        window.addEventListener("error", (e) => console.error("JS error:", e.error || e.message));
-        window.addEventListener("unhandledrejection", (e) => console.error("Unhandled rejection:", e.reason));
+        window.addEventListener("error", e =>
+            console.error("JS error:", e.error || e.message)
+        );
 
-        // ===== events =====
-        sendBtn.addEventListener("click", (e) => {
+        window.addEventListener("unhandledrejection", e =>
+            console.error("Unhandled rejection:", e.reason)
+        );
+
+        sendBtn.addEventListener("click", e => {
             e.preventDefault();
             e.stopPropagation();
             sendChat();
         });
 
-        newBtn.addEventListener("click", (e) => {
+        newBtn.addEventListener("click", e => {
             e.preventDefault();
             e.stopPropagation();
             newChat();
         });
 
-        // init
         refreshConversations();
     });
 </script>
