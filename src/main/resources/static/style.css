@@ -1,4 +1,8 @@
-/* GENERAL PAGE */
+/* ===== BASE / PAGE ===== */
+
+html, body {
+    height: 100%;
+}
 
 body {
     font-family: Arial, sans-serif;
@@ -7,17 +11,18 @@ body {
 }
 
 
-/* APP LAYOUT */
+/* ===== APP LAYOUT ===== */
 
 .app {
     display: flex;
     height: 100vh;
+    min-height: 0; /* IMPORTANT pentru flex + overflow */
 }
 
 
-/* LEFT PANEL */
+/* ===== LEFT PANEL ===== */
 
-.left{
+.left {
     flex: 3;
     padding: 16px;
     border-right: 1px solid #ddd;
@@ -26,24 +31,28 @@ body {
     flex-direction: column;
 
     height: 100%;
+    min-height: 0; /* IMPORTANT */
 }
 
 
-/* RIGHT PANEL */
+/* ===== RIGHT PANEL ===== */
 
 .right {
     flex: 1.4;
     padding: 16px;
     overflow: auto;
+
+    height: 100%;
+    min-height: 0; /* IMPORTANT */
 }
 
 
-/* CHAT WINDOW */
+/* ===== CHAT WINDOW ===== */
 
-#chatOut{
-    flex: 1;              /* ocupă tot spațiul liber */
-    margin-top: 10px;
-    margin-bottom: 10px;
+#chatOut {
+    flex: 1 1 auto;
+    min-height: 0;              /* IMPORTANT: ca overflow să funcționeze corect în flex */
+    margin: 10px 0;
 
     border: 1px solid #ddd;
     padding: 12px;
@@ -52,24 +61,25 @@ body {
 
     position: relative;
 
-    /* LOGO WATERMARK */
+    /* LOGO WATERMARK - umple frumos fără benzi albe */
     background-image: url("/ragnarok-logo.jpg");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 80%;
+    background-size: cover;     /* <-- asta scoate spațiul alb lateral */
+    background-color: #fff;
 }
 
-/* overlay pentru lizibilitate */
-#chatOut::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background: rgba(255,255,255,0.55);
-    pointer-events:none;
+/* overlay pentru lizibilitate (mai vizibil decât înainte) */
+#chatOut::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.45); /* 0.35 = mai puternic, 0.55 = mai șters */
+    pointer-events: none;
 }
 
 
-/* INPUT ROW */
+/* ===== INPUT ROW ===== */
 
 .row {
     display: flex;
@@ -78,7 +88,7 @@ body {
 }
 
 
-/* MESSAGE INPUT */
+/* ===== MESSAGE INPUT ===== */
 
 #chatMsg {
     flex: 1;
@@ -88,7 +98,7 @@ body {
 }
 
 
-/* BUTTONS */
+/* ===== BUTTONS ===== */
 
 .btn {
     padding: 8px 14px;
@@ -109,7 +119,7 @@ body {
 }
 
 
-/* CONVERSATIONS */
+/* ===== CONVERSATIONS ===== */
 
 .conv {
     padding: 10px;
@@ -129,7 +139,7 @@ body {
 }
 
 
-/* TEXT */
+/* ===== TEXT ===== */
 
 .muted {
     color: #666;
