@@ -17,12 +17,15 @@ body {
 
 /* LEFT PANEL */
 
-.left {
+.left{
     flex: 3;
     padding: 16px;
     border-right: 1px solid #ddd;
+
     display: flex;
     flex-direction: column;
+
+    height: 100%;
 }
 
 
@@ -38,7 +41,10 @@ body {
 /* CHAT WINDOW */
 
 #chatOut{
-    flex: 1;
+    flex: 1;              /* ocupă tot spațiul liber */
+    margin-top: 10px;
+    margin-bottom: 10px;
+
     border: 1px solid #ddd;
     padding: 12px;
     overflow: auto;
@@ -50,10 +56,10 @@ body {
     background-image: url("/ragnarok-logo.jpg");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 85%;
+    background-size: 80%;
 }
 
-/* overlay alb pentru lizibilitate text */
+/* overlay pentru lizibilitate */
 #chatOut::before{
     content:"";
     position:absolute;
