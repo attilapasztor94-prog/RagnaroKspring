@@ -49,9 +49,9 @@ body {
 
 /* ===== CHAT WINDOW ===== */
 
-#chatOut {
+#chatOut{
     flex: 1 1 auto;
-    min-height: 0;              /* IMPORTANT: ca overflow să funcționeze corect în flex */
+    min-height: 0;
     margin: 10px 0;
 
     border: 1px solid #ddd;
@@ -60,31 +60,37 @@ body {
     white-space: pre-wrap;
 
     position: relative;
-
-    /* LOGO WATERMARK - umple frumos fără benzi albe */
-    background-image: url("/ragnarok-logo.jpg");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: cover;     /* <-- asta scoate spațiul alb lateral */
     background-color: #fff;
 }
 
-/* overlay pentru lizibilitate (mai vizibil decât înainte) */
-#chatOut::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(255,255,255,0.45); /* 0.35 = mai puternic, 0.55 = mai șters */
-    pointer-events: none;
+/* layer 1: fill (cover) */
+#chatOut::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image: url("/ragnarok-logo.jpg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    opacity: 0.18;            /* cât de tare e “fill”-ul */
+    filter: blur(6px);        /* face tăierea să nu se observe */
+    transform: scale(1.05);   /* ascunde marginile blur-ului */
+    pointer-events:none;
+    z-index: 0;
 }
 
-
-/* ===== INPUT ROW ===== */
-
-.row {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
+/* layer 2: logo complet (contain) */
+#chatOut::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image: url("/ragnarok-logo.jpg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    opacity: 0.35;            /* cât de vizibil e logo-ul */
+    pointer-events:none;
+    z-index: 1;
 }
 
 
