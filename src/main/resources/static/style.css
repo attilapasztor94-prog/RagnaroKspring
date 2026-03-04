@@ -10,7 +10,6 @@ body {
     background-color: #f4f4f4;
 }
 
-
 /* ===== APP LAYOUT ===== */
 
 .app {
@@ -18,7 +17,6 @@ body {
     height: 100vh;
     min-height: 0; /* IMPORTANT pentru flex + overflow */
 }
-
 
 /* ===== LEFT PANEL ===== */
 
@@ -34,7 +32,6 @@ body {
     min-height: 0; /* IMPORTANT */
 }
 
-
 /* ===== RIGHT PANEL ===== */
 
 .right {
@@ -46,8 +43,7 @@ body {
     min-height: 0; /* IMPORTANT */
 }
 
-
-/* ===== CHAT WINDOW ===== */
+/* ===== CHAT WINDOW (watermark fără crop) ===== */
 
 #chatOut{
     flex: 1 1 auto;
@@ -61,22 +57,26 @@ body {
 
     position: relative;
     background-color: #fff;
+    z-index: 0; /* IMPORTANT: textul rămâne deasupra */
 }
 
-/* layer 1: fill (cover) */
+/* layer 1: fill (cover + blur) */
 #chatOut::after{
     content:"";
     position:absolute;
     inset:0;
+
     background-image: url("/ragnarok-logo.jpg");
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
-    opacity: 0.18;            /* cât de tare e “fill”-ul */
-    filter: blur(6px);        /* face tăierea să nu se observe */
-    transform: scale(1.05);   /* ascunde marginile blur-ului */
+
+    opacity: 0.18;          /* cât de tare e “fill”-ul */
+    filter: blur(6px);      /* face tăierea să nu se observe */
+    transform: scale(1.05); /* ascunde marginile blur-ului */
+
     pointer-events:none;
-    z-index: 0;
+    z-index: -2; /* IMPORTANT: în spatele textului */
 }
 
 /* layer 2: logo complet (contain) */
@@ -84,15 +84,25 @@ body {
     content:"";
     position:absolute;
     inset:0;
+
     background-image: url("/ragnarok-logo.jpg");
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
-    opacity: 0.35;            /* cât de vizibil e logo-ul */
+
+    opacity: 0.35;          /* vizibilitatea logo-ului complet */
+
     pointer-events:none;
-    z-index: 1;
+    z-index: -1; /* IMPORTANT: în spatele textului */
 }
 
+/* ===== INPUT ROW ===== */
+
+.row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
 
 /* ===== MESSAGE INPUT ===== */
 
@@ -102,7 +112,6 @@ body {
     border: 1px solid #ccc;
     border-radius: 6px;
 }
-
 
 /* ===== BUTTONS ===== */
 
@@ -124,7 +133,6 @@ body {
     cursor: not-allowed;
 }
 
-
 /* ===== CONVERSATIONS ===== */
 
 .conv {
@@ -143,7 +151,6 @@ body {
 .conv.active {
     border-color: #333;
 }
-
 
 /* ===== TEXT ===== */
 
