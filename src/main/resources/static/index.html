@@ -5,60 +5,12 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Ragnarok ICS</title>
 
+    <!-- CSS extern -->
     <link rel="stylesheet" href="/style.css">
 
     <!-- SVG Favicon - R simplu, clar la orice dimensiune -->
     <link rel="icon" type="image/svg+xml"
           href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ccircle%20cx='50'%20cy='50'%20r='50'%20fill='black'/%3E%3Ctext%20x='50'%20y='68'%20text-anchor='middle'%20font-size='64'%20font-family='Arial'%20font-weight='700'%20fill='white'%3ER%3C/text%3E%3C/svg%3E" />
-
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; }
-        .app { display: flex; height: 100vh; }
-
-        .left {
-            flex: 3;
-            padding: 16px;
-            border-right: 1px solid #ddd;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .right {
-            flex: 1.4;
-            padding: 16px;
-            overflow: auto;
-        }
-
-        #chatOut {
-            flex: 1;
-            border: 1px solid #ddd;
-            padding: 12px;
-            overflow: auto;
-            white-space: pre-wrap;
-            background: #fff;
-        }
-
-        .row { display: flex; gap: 8px; }
-        #chatMsg { flex: 1; padding: 8px; }
-
-        .btn { padding: 8px 12px; cursor: pointer; }
-        .btn:disabled { cursor: not-allowed; opacity: 0.6; }
-
-        .muted { color: #666; font-size: 12px; }
-        .error { color: #b00020; }
-
-        .conv {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .conv.active { border-color: #333; }
-    </style>
 </head>
 
 <body>
