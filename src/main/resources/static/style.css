@@ -37,22 +37,29 @@ body {
 
 /* CHAT WINDOW */
 
-#chatOut {
+#chatOut{
     flex: 1;
     border: 1px solid #ddd;
     padding: 12px;
     overflow: auto;
     white-space: pre-wrap;
-    background-color: white;
 
-    /* WATERMARK LOGO */
-    background:
-            linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)),
-            url("/ragnarok-logo.jpg");
+    position: relative;
 
+    /* LOGO WATERMARK */
+    background-image: url("/ragnarok-logo.jpg");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 260px;
+    background-size: 85%;
+}
+
+/* overlay alb pentru lizibilitate text */
+#chatOut::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background: rgba(255,255,255,0.55);
+    pointer-events:none;
 }
 
 
