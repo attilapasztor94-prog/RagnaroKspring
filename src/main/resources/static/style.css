@@ -1,0 +1,128 @@
+/* GENERAL PAGE */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f4f4f4;
+}
+
+
+/* APP LAYOUT */
+
+.app {
+    display: flex;
+    height: 100vh;
+}
+
+
+/* LEFT PANEL */
+
+.left {
+    flex: 3;
+    padding: 16px;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* RIGHT PANEL */
+
+.right {
+    flex: 1.4;
+    padding: 16px;
+    overflow: auto;
+}
+
+
+/* CHAT WINDOW */
+
+#chatOut {
+    flex: 1;
+    border: 1px solid #ddd;
+    padding: 12px;
+    overflow: auto;
+    white-space: pre-wrap;
+    background-color: white;
+
+    /* WATERMARK LOGO */
+    background:
+            linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)),
+            url("/ragnarok-logo.jpg");
+
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 260px;
+}
+
+
+/* INPUT ROW */
+
+.row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+
+/* MESSAGE INPUT */
+
+#chatMsg {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+
+/* BUTTONS */
+
+.btn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background-color: #2c2c2c;
+    color: white;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #444;
+}
+
+.btn:disabled {
+    background-color: #888;
+    cursor: not-allowed;
+}
+
+
+/* CONVERSATIONS */
+
+.conv {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    background-color: white;
+}
+
+.conv:hover {
+    background-color: #f0f0f0;
+}
+
+.conv.active {
+    border-color: #333;
+}
+
+
+/* TEXT */
+
+.muted {
+    color: #666;
+    font-size: 12px;
+}
+
+.error {
+    color: red;
+}
