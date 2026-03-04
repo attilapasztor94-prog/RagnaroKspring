@@ -1,8 +1,6 @@
 /* ===== BASE / PAGE ===== */
 
-html, body {
-    height: 100%;
-}
+html, body { height: 100%; }
 
 body {
     font-family: Arial, sans-serif;
@@ -15,7 +13,7 @@ body {
 .app {
     display: flex;
     height: 100vh;
-    min-height: 0; /* IMPORTANT pentru flex + overflow */
+    min-height: 0;
 }
 
 /* ===== LEFT PANEL ===== */
@@ -24,12 +22,10 @@ body {
     flex: 3;
     padding: 16px;
     border-right: 1px solid #ddd;
-
     display: flex;
     flex-direction: column;
-
     height: 100%;
-    min-height: 0; /* IMPORTANT */
+    min-height: 0;
 }
 
 /* ===== RIGHT PANEL ===== */
@@ -38,12 +34,11 @@ body {
     flex: 1.4;
     padding: 16px;
     overflow: auto;
-
     height: 100%;
-    min-height: 0; /* IMPORTANT */
+    min-height: 0;
 }
 
-/* ===== CHAT WINDOW (watermark fără crop) ===== */
+/* ===== CHAT WINDOW ===== */
 
 #chatOut{
     flex: 1 1 auto;
@@ -57,7 +52,7 @@ body {
 
     position: relative;
     background-color: #fff;
-    z-index: 0; /* IMPORTANT: textul rămâne deasupra */
+    z-index: 0;
 }
 
 /* layer 1: fill (cover + blur) */
@@ -71,12 +66,12 @@ body {
     background-position: center;
     background-size: cover;
 
-    opacity: 0.18;          /* cât de tare e “fill”-ul */
-    filter: blur(6px);      /* face tăierea să nu se observe */
-    transform: scale(1.05); /* ascunde marginile blur-ului */
+    opacity: 0.28;          /* <-- MAI PROMINENT */
+    filter: blur(6px);
+    transform: scale(1.05);
 
     pointer-events:none;
-    z-index: -2; /* IMPORTANT: în spatele textului */
+    z-index: -2;
 }
 
 /* layer 2: logo complet (contain) */
@@ -90,10 +85,9 @@ body {
     background-position: center;
     background-size: contain;
 
-    opacity: 0.35;          /* vizibilitatea logo-ului complet */
-
+    opacity: 0.35;
     pointer-events:none;
-    z-index: -1; /* IMPORTANT: în spatele textului */
+    z-index: -1;
 }
 
 /* ===== INPUT ROW ===== */
@@ -124,14 +118,8 @@ body {
     cursor: pointer;
 }
 
-.btn:hover {
-    background-color: #444;
-}
-
-.btn:disabled {
-    background-color: #888;
-    cursor: not-allowed;
-}
+.btn:hover { background-color: #444; }
+.btn:disabled { background-color: #888; cursor: not-allowed; }
 
 /* ===== CONVERSATIONS ===== */
 
@@ -144,21 +132,10 @@ body {
     background-color: white;
 }
 
-.conv:hover {
-    background-color: #f0f0f0;
-}
-
-.conv.active {
-    border-color: #333;
-}
+.conv:hover { background-color: #f0f0f0; }
+.conv.active { border-color: #333; }
 
 /* ===== TEXT ===== */
 
-.muted {
-    color: #666;
-    font-size: 12px;
-}
-
-.error {
-    color: red;
-}
+.muted { color: #666; font-size: 12px; }
+.error { color: red; }
